@@ -67,79 +67,80 @@ uploaded_files = st.file_uploader(
 )
 
 job_desc = st.text_area("📝 Enter Job Description")
+if not uploaded_files or not job_desc:
+    st.info("👆 Please upload resumes and enter job description")
 
 # -------- PROCESS -------- #
 
+
 if uploaded_files and job_desc:
 
-    results = []
-    progress = st.progress(0)
+    with st.spinner("⏳ Analyzing resumes..."):
 
-    for i, file in enumerate(uploaded_files):
-        text = extract_text(file)
+        results = []
+        progress = st.progress(0)
 
-        if not text:
-            st.warning(f"⚠️ Could not read {file.name}")
-            continue
+        for i, file in enumerate(uploaded_files):
+            text = extract_text(file)
 
-        skills = extract_skills(text)
-        tfidf = tfidf_score(text, job_desc)
-        skill = skill_score(skills, job_desc)
-        score = final_score(tfidf, skill)
+            if not text:
+                st.toast(f"⚠️ Could not read {file.name}")
+                continue
 
-        results.append({
-            "Candidate": file.name,
-            "Score (%)": round(score * 100, 2),
-            "Skills": ", ".join(skills)
-        })
+            skills = extract_skills(text)
+            tfidf = tfidf_score(text, job_desc)
+            skill = skill_score(skills, job_desc)
+            score = final_score(tfidf, skill)
 
-        progress.progress((i + 1) / len(uploaded_files))
+            results.append({
+                "Candidate": file.name,
+                "Score (%)": round(score * 100, 2),
+                "Skills": ", ".join(skills)
+            })
+
+            progress.progress((i + 1) / len(uploaded_files))
 
     if results:
         df = pd.DataFrame(results).sort_values(by="Score (%)", ascending=False)
 
         st.success("✅ Analysis Complete!")
 
-        # Top candidate
+        # 🏆 Top candidate
         st.subheader("🏆 Top Candidate")
         st.metric(label=df.iloc[0]["Candidate"], value=f"{df.iloc[0]['Score (%)']}%")
 
-        # Ranking
+        # 📊 Ranking
         st.subheader("📊 Candidate Ranking")
         st.dataframe(df, use_container_width=True)
 
-        # Chart
-        st.subheader("📈 Score Visualization (Pie Chart)")
+        # 📌 Summary Stats
+        st.subheader("📌 Summary Insights")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("👥 Total Candidates", len(df))
+
+        with col2:
+            st.metric("📊 Average Score", f"{round(df['Score (%)'].mean(), 2)}%")
+
+        # 📈 Chart (Pie)
+        st.subheader("📈 Score Visualization")
 
         fig, ax = plt.subplots()
 
-        labels = df["Candidate"]
-        sizes = df["Score (%)"]
-
-        
-        colors = [
-       "#A8DADC",  
-       "#457B9D", 
-       "#F1FAEE",  
-       "#E63946",  
-       "#FFB4A2",  
-       "#BDB2FF",  
-       ]
-
         ax.pie(
-        sizes,
-        labels=labels,
-        colors=colors[:len(labels)],
-        autopct='%1.1f%%',
-        startangle=90,
-        wedgeprops={'edgecolor': 'white'}
-        ) 
+            df["Score (%)"],
+            labels=df["Candidate"],
+            autopct='%1.1f%%',
+            startangle=90,
+            wedgeprops={'edgecolor': 'white'}
+        )
 
         ax.axis('equal')
+        st.pyplot(fig)
 
-        st.pyplot(fig)    
-    
-        # Skill Analysis
+        # 📌 Skill Analysis
         st.subheader("📌 Skill Analysis")
         job_skills = extract_skills(job_desc)
 
@@ -155,7 +156,7 @@ if uploaded_files and job_desc:
                 if missing:
                     st.info(f"💡 Improve: {', '.join(missing)}")
 
-        # -------- DOWNLOAD REPORT -------- #
+        # 📥 Download
         csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📥 Download Report (CSV)",
