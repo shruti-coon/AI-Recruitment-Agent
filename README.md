@@ -92,9 +92,7 @@ This project can be easily deployed using Streamlit Cloud.
 ## 👩‍💻 Author
 
 **Shruti**
-
-* 💼 Aspiring Data Scientist & Full Stack Developer
-* 🚀 Building AI + MERN Stack Projects
+* 🚀 Aspiring AI ML Engineer
 
 ---
 
